@@ -45,8 +45,11 @@ def deepnn(x):
     ## 第二层卷积操作 ##
     with tf.name_scope('conv2'):
         W_conv2 = weight_variable([5, 5, 32, 64])
+        variable_summaries(W_conv2)
         b_conv2 = bias_variable([64])
+        variable_summaries(b_conv2)
         h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
+        tf.summary.histogram('activations', h_conv2)
 
     with tf.name_scope('pool2'):
         h_pool2 = max_pool_2x2(h_conv2)
@@ -69,7 +72,9 @@ def deepnn(x):
     ## 第四层输出操作 ##
     with tf.name_scope('fc2'):
         W_fc2 = weight_variable([1024, 10])
+        variable_summaries(W_fc2)
         b_fc2 = bias_variable([10])
+        variable_summaries(b_fc2)
         y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
     return y_conv, keep_prob
 
@@ -128,20 +133,25 @@ def main(_):
     # graph_location = tempfile.mkdtemp()
     # print('Saving graph to: %s' % graph_location)
     train_writer = tf.summary.FileWriter('output/TensorFlowCNNDemo3/train')
+    test_writer = tf.summary.FileWriter('output/TensorFlowCNNDemo3/test')
     train_writer.add_graph(tf.get_default_graph())
 
 
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        for i in range(2000):
+        for i in range(3000):
             batch = mnist.train.next_batch(50)
             if i % 200 == 0:
                 # train_accuracy = accuracy.eval(feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0})
                 summary, acc = sess.run([merged, accuracy], feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0})
-                train_writer.add_summary(summary, i)
+                test_writer.add_summary(summary, i)
                 print('step %d, training accuracy %g' % (i, acc))
-            train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
+            else:
+                # train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
+                summary, _ = sess.run([merged, train_step], feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
+                train_writer.add_summary(summary, i)
+                # print('step %d, training accuracy %g' % (i, _))
         # print('test accuracy %g' % accuracy.eval(feed_dict={ x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
         train_writer.add_graph(sess.graph)
 
